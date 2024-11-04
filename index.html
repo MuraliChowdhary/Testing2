@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting...</title>
+    <script>
+        window.onload = function() {
+            // Load FingerprintJS to get the visitor ID
+            const fpPromise = import(`https://fpjscdn.net/v3/PaYRWkgvLTeq4rPN1YZL`)
+                .then(FingerprintJS => FingerprintJS.load());
+
+            fpPromise
+                .then(fp => fp.get())
+                .then(result => {
+                    const visitorId = result.visitorId;
+                    localStorage.setItem('visitorId', visitorId);
+
+                    // Get shortId from URL query parameter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const shortId = urlParams.get('shortId');
+
+                    // Use an IP geolocation API to get the city (this example uses `ipapi`)
+                    fetch('https://ipapi.co/json/')
+                        .then(response => response.json())
+                        .then(location => {
+                            const city = location.city;
+
+                            // Send visitor info to backend and redirect
+                            fetch(`http://localhost:3004/${shortId}?visitorId=${visitorId}&city=${city}`, {
+                                method: 'GET',
+                                redirect: 'follow'
+                            }).then(response => {
+                                if (response.redirected) {
+                                    // Follow the redirect
+                                    window.location.href = response.url;
+                                }
+                            }).catch(error => console.error('Error during redirection:', error));
+                        })
+                        .catch(error => console.error('Error fetching city:', error));
+                })
+                .catch(error => console.error('Error loading FingerprintJS:', error));
+        };
+    </script>
+</head>
+<body>
+    <h1>Redirecting...</h1>
+</body>
+</html>
